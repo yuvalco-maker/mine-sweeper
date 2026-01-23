@@ -1,0 +1,149 @@
+:root {
+    --background: black;
+    --Main-color: #bdbdbd;
+    --light-edge: #ffffff;
+    --dark-edge: #7b7b7b;
+    --cell-pressed: #d1d1d1;
+    --led: red;
+    --led-background: black;
+    --green-led: #22ff00;
+}
+
+
+.footer-container {
+    margin-top: 20px;
+    padding: 10px;
+    text-align: center;
+    background-color: #f0f0f0;
+    border-top: 1px solid #ccc;
+    width: 10rem;
+}
+
+.background {
+    background-color: var(--background);
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+/* THE OUTER CASE */
+.board-container {
+    background-color: var(--Main-color);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+
+    /* Raised bevel */
+    border-top: 3px solid var(--light-edge);
+    border-left: 3px solid var(--light-edge);
+    border-right: 3px solid var(--dark-edge);
+    border-bottom: 3px solid var(--dark-edge);
+}
+
+
+/* THE TOP PANEL */
+.header-container {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin: 0.5rem;
+    box-sizing: border-box;
+    box-sizing: border-box;
+
+    /* Sunken 'Well' effect */
+    border-top: 2px solid var(--dark-edge);
+    border-left: 2px solid var(--dark-edge);
+    border-bottom: 2px solid var(--light-edge);
+    border-right: 2px solid var(--light-edge);
+    margin-bottom: 10px;
+}
+
+/* Optional: styling for the numbers to make them look like old LCDs */
+.timer,
+.flagCounter {
+    background-color: var(--led-background);
+    color: var(--led);
+    font-family: monospace;
+    padding: 0.2rem 0.2rem;
+    font-size: 1.5rem;
+    min-width: 60px;
+    text-align: center;
+    margin: 0.5rem;
+}
+
+.header-center-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.lives-counter {
+    background-color: var(--led-background);
+    color: var(--green-led);
+    font-family: monospace;
+    padding: 0.2rem 0.2rem;
+    font-size: 0.8rem;
+    min-width: 60px;
+    text-align: center;
+}
+
+.status {
+    width: 2rem;
+    height: 2rem;
+
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    align-content: center;
+    justify-content: center;
+    border-top: 2px solid var(--light-edge);
+    border-left: 2px solid var(--light-edge);
+    border-bottom: 2px solid var(--dark-edge);
+    border-right: 2px solid var(--dark-edge);
+
+}
+
+/* THE GRID AREA */
+.grid-container {
+    /* Sunken look for the play area */
+    border-top: 3px solid var(--dark-edge);
+    border-left: 3px solid var(--dark-edge);
+    border-bottom: 3px solid var(--light-edge);
+    border-right: 3px solid var(--light-edge);
+}
+
+.gameBoard {
+    border-collapse: collapse;
+
+}
+
+.cell {
+    height: 1.8rem;
+    width: 1.8rem;
+    background-color: var(--Main-color);
+    box-sizing: border-box;
+    cursor: pointer;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: bold;
+
+    /* Raised button look */
+    border-top: 2px solid var(--light-edge);
+    border-left: 2px solid var(--light-edge);
+    border-bottom: 2px solid var(--dark-edge);
+    border-right: 2px solid var(--dark-edge);
+}
+
+.cell.revealed {
+    border: 1px solid var(--dark-edge);
+    background-color: var(--cell-pressed);
+}
