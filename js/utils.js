@@ -1,44 +1,39 @@
+/**
+ * MINESWEEPER - RENDERING & UTILITY FUNCTIONS
+ */
+
 'use strict'
 
-var gColorPalette = [
-    '#FF0000',
-    '#FFB8FF',
-    '#00FFFF',
-    '#FFB852',
-    '#00FF00',
-    '#FFFF00',
-    '#FF00FF',
-    '#FFFFFF'
-
-];
-
-function getRandomColor() {
-    let idx = getRandomIntInclusive(0, gColorPalette.length - 1)
-    return gColorPalette[idx]
-}
-
-
-// location such as: {i: 2, j: 7}
+/**
+ * Updates a specific cell's content in the DOM based on its coordinates
+ * @param {Object} location - {i, j} coordinates
+ * @param {String} value - The content to display (MINE, FLAG, number, etc.)
+ */
 function renderCell(location, value) {
-    // Select the elCell and set the value
     const elCell = document.querySelector(`.cell-${location.i}-${location.j}`)
-    elCell.innerHTML = value
+    if (elCell) elCell.innerHTML = value
 }
 
+/**
+ * Helper to grab a DOM element by its board coordinates
+ */
 function getCell(location) {
     return document.querySelector(`.cell-${location.i}-${location.j}`)
 }
 
+/**
+ * Generates a random integer between min and max (inclusive)
+ */
 function getRandomIntInclusive(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
+/**
+ * Fisher-Yates Shuffle algorithm to randomize mine placement
+ */
 function shuffle(items) {
     for (var i = items.length - 1; i > 0; i--) {
-        // Pick a random index from 0 to i
         const j = Math.floor(Math.random() * (i + 1));
-
-        // Swap elements items[i] and items[j]
         const temp = items[i];
         items[i] = items[j];
         items[j] = temp;
@@ -46,25 +41,45 @@ function shuffle(items) {
     return items;
 }
 
+/**
+ * Builds and injects the HTML table for the game board
+ * @param {Array} mat - The 2D array representing the game board logic
+ * @param {String} selector - CSS selector for the container
+ */
 function renderBoard(mat, selector) {
     const elContainer = document.querySelector(selector)
     elContainer.innerHTML = ``
+
+    // Start building the table string
     var strHTML = `<table class="gameBoard sunk" border="1"><tbody>`
+
     for (let i = 0; i < mat.length; i++) {
         strHTML += `<tr>`
         for (let j = 0; j < mat[0].length; j++) {
             const cell = mat[i][j]
-            const className = `cell cell-` + i + `-` + j
-            strHTML += `<td class="${className} ${cell.isRevealed ? 'revealed' : ''} "oncontextmenu="flagCell(event,this)" onClick="revealCell(this)">`
+
+            // Determine if the cell should have a color class for numbers
+            var colorClass = (cell.isRevealed && cell.minesAroundCount > 0 && !cell.isMine)
+                ? `num-${cell.minesAroundCount}`
+                : ''
+
+            // Combine all necessary classes
+            const className = `cell cell-${i}-${j} ${cell.isRevealed ? 'revealed' : ''} ${colorClass}`
+
+            // Create cell with event listeners for click and right-click
+            strHTML += `<td class="${className}" oncontextmenu="flagCell(event,this)" onClick="revealCell(this)">`
+
+            // Render content only if revealed or marked
             if (cell.isRevealed) {
                 if (cell.isMine) {
                     strHTML += MINE
-                } else if (cell.minesAroundCount != 0) {
+                } else if (cell.minesAroundCount !== 0) {
                     strHTML += cell.minesAroundCount
-                } else if (cell.isMarked) {
-                    strHTML += FLAG
                 }
+            } else if (cell.isMarked) {
+                strHTML += FLAG
             }
+
             strHTML += `</td>`
         }
         strHTML += `</tr>`
@@ -73,90 +88,140 @@ function renderBoard(mat, selector) {
     elContainer.innerHTML = strHTML
 }
 
-
+/**
+ * Parses the coordinate info from a DOM element's class (e.g., "cell-2-5")
+ */
 function extractCellLOcation(elcell) {
-    let str = elcell.classList[1]
+    let str = elcell.classList[1] // Assumes 'cell-i-j' is the second class
     let arr = str.split(`-`)
-    let location = {
+    return {
         i: +arr[1],
         j: +arr[2]
     }
-    return location
 }
 
+/**
+ * Returns an array of coordinate objects for all 8 surrounding neighbors
+ */
 function getNieghboors(i, j) {
-    let neighbors = [
+    return [
         { i: i - 1, j: j - 1 }, { i: i - 1, j: j }, { i: i - 1, j: j + 1 },
-        { i: i, j: j - 1 }, { i: i, j: j + 1 }, { i: i + 1, j: j - 1 }, { i: i + 1, j: j }, { i: i + 1, j: j + 1 }
+        { i: i, j: j - 1 }, { i: i, j: j + 1 },
+        { i: i + 1, j: j - 1 }, { i: i + 1, j: j }, { i: i + 1, j: j + 1 }
     ]
-    return neighbors
 }
 
+/**
+ * Checks if a given coordinate is actually within the board boundaries
+ */
 function isOnBoardLocation(location) {
-    if (location.i >= 0 && location.i < gBoard.length && location.j >= 0 && location.j < gBoard[0].length) {
-        return true
-    }
-    return false
+    return (location.i >= 0 && location.i < gBoard.length &&
+        location.j >= 0 && location.j < gBoard[0].length);
 }
 
+/**
+ * Renders the top UI bar (Timer, Restart Button, Flag Counter, Lives, Safe-Clicks)
+ */
 function renderheader(selector) {
     const elContainer = document.querySelector(selector)
-    elContainer.innerHTML = ``
-    let strHTML = `
-    <div class="timer">000</div>
-    
-    <div class="header-center-group">
-        <button type="button" class="status" onclick="restart()">${NORMAL}</button>
-        <div class="lives-counter">LIVES: 3</div>
+    elContainer.innerHTML = `
+    <div class="header-wrapper">
+        <div class="upper-control">
+            <div class="timer">000</div>
+            <button type="button" class="status" onclick="restart()">${NORMAL}</button>
+            <div class="flagCounter">${gRemianingFlags}</div>
+        </div>
+
+        <div class="lower-control">
+            <button type="button" class="safeClicks" onClick="onSafeClick()">Safe-Clicks: 3</button>
+            <div class="lives-counter">LIVES: 3</div>
+        </div>
     </div>
-    
-    <div class="flagCounter">${gRemianingFlags}</div>
 `;
-    elContainer.innerHTML = strHTML;
-}
-function renderFlag(count) {
-    let elflagCount = document.querySelector(".flagCounter")
-    elflagCount.innerText = count
 }
 
+/**
+ * Updates the flag counter display
+ */
+function renderFlag(count) {
+    let elflagCount = document.querySelector(".flagCounter")
+    if (elflagCount) elflagCount.innerText = count
+}
+
+/**
+ * Formats and updates the timer display (e.g., 005 or 042)
+ */
 function updateTimer(secs) {
     let elTimer = document.querySelector(`.timer`)
+    if (!elTimer) return
     let time = secs
-    if (time < 10) {
-        time = `00` + secs
-    }
-    else {
-        time = `0` + secs
-    }
+    if (time < 10) time = `00` + secs
+    else if (time < 100) time = `0` + secs
+
     elTimer.innerText = time
 }
 
-
+/**
+ * Updates the "Smiley Face" button status
+ */
 function renderStatus(status) {
     let elStatus = document.querySelector(`.status`)
-    elStatus.innerText = status
+    if (elStatus) elStatus.innerText = status
 }
 
+/**
+ * Updates the Lives UI text
+ */
 function renderLives(num) {
     let elLives = document.querySelector(`.lives-counter`)
-    elLives.innerText = `lives remaining:${num}`
+    if (elLives) elLives.innerText = `lives remaining: ${num}`
 }
 
+/**
+ * Updates the Safe-Clicks remaining UI text
+ */
+function renderSafeClicks(num) {
+    let elSafe = document.querySelector(`.safeClicks`)
+    if (elSafe) elSafe.innerText = `safe-clicks remaining: ${num}`
+}
+
+/**
+ * Briefly reveals a cell (used when hitting a mine with lives remaining)
+ */
 function flashCell(elCell, innerText, revertText, game) {
     showCell(elCell)
     let loc = extractCellLOcation(elCell)
     renderCell(loc, innerText)
     setTimeout(() => { unrevealCell(elCell, revertText, game) }, 1000)
-
 }
+
+/**
+ * Reverts a "flashed" cell back to its hidden/flagged state
+ */
 function unrevealCell(elCell, revertText, game) {
     elCell.classList.remove(`revealed`)
     let loc = extractCellLOcation(elCell)
     renderCell(loc, revertText)
-    game.isOn = true
-    flagCell(null, elCell)
+    game.isOn = true // Resume game
+    flagCell(null, elCell) // Automatically re-flag it for safety
 }
 
+/**
+ * Applies the 'revealed' CSS class to a cell
+ */
 function showCell(elCell) {
     elCell.classList.add(`revealed`)
+}
+
+/**
+ * Renders the difficulty selection buttons
+ */
+function renderdiff(selector) {
+    const elContainer = document.querySelector(selector)
+    elContainer.innerHTML = `
+   <button type="button" class="diff easy" onClick="changeDiff(4,2)">beginner</button>
+   <button type="button" class="diff normal" onClick="changeDiff(8,12)">medium</button>
+   <button type="button" class="diff hard" onClick="changeDiff(14,32)">expert</button>
+   <button type="button" class="diff custom" onClick="customDiff()">custom</button>
+`;
 }
