@@ -1,42 +1,45 @@
 /**
- * MINESWEEPER - GLOBAL CONFIGURATION & CONSTANTS
+ * MINESWEEPER - MAIN GAME LOGIC
  */
-const MINE = '💥';
-const FLAG = '🚩';
-const EMPTY = '';
-const NORMAL = '😄';
-const LOST = '🤯';
-const WIN = '😎';
 
-// Game State Object
+// --- CONSTANTS ---
+const MINE = '💥'
+const FLAG = `🚩`
+const EMPTY = ``
+const NORMAL = `😄`
+const LOST = `🤯`
+const WIN = `😎`
+
+// --- GLOBAL STATE ---
 var gGame = {
     isOn: false,
     revealedCount: 0,
     markedCount: 0,
     secsPassed: 0,
     isFirstClick: true
-};
+}
 
-// Global variables for board and level settings
-var gMines = [];
-var gTimeinterval;
-var gIntervalLength = 1000;
-var gLevel = { SIZE: 4, MINES: 2 };
-var gSafeClicks = 0;
-var gPassScore = 0; // The count needed to win (Total cells - Mines)
-var gBoard = [];
-var gRemianingFlags = 0;
-var gLives = 0;
-var gBOOM = new Audio(`../audio/boom.wav`);
+var gMines = []            // Stores locations of all mines
+var gTimeinterval;         // Holds the setInterval reference
+var gIntervalLength = 1000 // 1 second intervals
+var gLevel = {             // Default difficulty (Beginner)
+    SIZE: 4,
+    MINES: 2,
+}
+var gSafeClicks = 0        // Counter for remaining safe-click hints
+var gPassScore = 0         // Target revealedCount to trigger a win
+var gBoard = []            // The 2D logical matrix
+var gRemianingFlags = 0    // Flags left to place
+var gLives = 0             // Remaining lives
+var gBOOM = new Audio(`../audio/boom.wav`) // Sound effect
 
 /**
- * STARTING THE GAME
+ * Initialization: Sets up a fresh game state
  */
 function onInit() {
-    // Reset basic counters
-    gLives = 3;
-    gSafeClicks = 3;
-    gMines = [];
+    gLives = 3
+    gSafeClicks = 3
+    gMines = []
     gGame = {
         isOn: true,
         revealedCount: 0,
@@ -44,35 +47,23 @@ function onInit() {
         secsPassed: 0,
         isFirstClick: true
     };
-
-    // Calculate how many non-mine cells need to be clicked to win
-    calcPass();
-
-    // Logic initialization
-    buildBoard(gLevel.SIZE);
+    gBoard = [];
     gRemianingFlags = gLevel.MINES;
 
-    // UI Rendering
-    renderheader(`.header-container`);
-    renderBoard(gBoard, `.grid-container`);
-    renderLives(gLives);
-    renderSafeClicks(gSafeClicks);
-    renderdiff(`.diff-container`);
+    calcPass(); // Determine win condition score
+    buildBoard(gLevel.SIZE); // Create the matrix
+
+    // Initial Render
+    renderheader(`.header-container`)
+    renderBoard(gBoard, `.grid-container`)
+    renderLives(gLives)
+    renderSafeClicks(gSafeClicks)
+    renderdiff(`.diff-container`)
 }
 
 /**
- * BOARD GENERATION
+ * Creates a single cell object with default properties
  */
-function buildBoard(size) {
-    gBoard = [];
-    for (let i = 0; i < size; i++) {
-        gBoard[i] = [];
-        for (let j = 0; j < size; j++) {
-            gBoard[i][j] = createCell(i, j);
-        }
-    }
-}
-
 function createCell(i, j) {
     return {
         location: { i: i, j: j },
@@ -80,263 +71,279 @@ function createCell(i, j) {
         isRevealed: false,
         isMine: false,
         isMarked: false,
-    };
+    }
 }
 
 /**
- * MINE PLACEMENT & NEIGHBOR LOGIC
+ * Builds the 2D array matrix based on level size
  */
-function placeMines(mines, firstClickLoc) {
-    let temp = gBoard.flat();
-    shuffle(temp);
+function buildBoard(size) {
+    gBoard = []
+    for (let i = 0; i < size; i++) {
+        gBoard[i] = []
+        for (let j = 0; j < size; j++) {
+            gBoard[i][j] = createCell(i, j)
+        }
+    }
+}
 
-    // Remove the first clicked cell from possible mine locations (preventing instant death)
+/**
+ * Randomly places mines on the board, avoiding the first clicked cell
+ */
+function placeMines(mines, loc) {
+    let temp = gBoard.flat()
+    shuffle(temp)
+
+    // Remove the first-clicked cell from the shuffled pool to ensure it's safe
     for (let i = 0; i < temp.length; i++) {
-        let cell = temp[i];
-        if (cell.location.i === firstClickLoc.i && cell.location.j === firstClickLoc.j) {
-            temp.splice(i, 1);
+        let cell = temp[i]
+        if (cell.location.i === loc.i && cell.location.j === loc.j) {
+            temp.splice(i, 1)
             break;
         }
     }
 
-    // Place mines and store them in gMines for endgame reveal
+    // Assign mines to the first 'n' cells in the shuffled array
     for (let i = 0; i < mines; i++) {
-        temp[i].isMine = true;
-        gMines.push(temp[i]);
+        temp[i].isMine = true
+        gMines.push(temp[i])
     }
 }
 
+/**
+ * Iterates through the whole board to calculate neighbor mine counts
+ */
 function setMinesNegsCount(board) {
     for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[i].length; j++) {
-            findNearMines(board[i][j]);
+            findNearMines(board[i][j])
         }
     }
 }
 
+/**
+ * Counts mines in the 8 neighboring cells of a specific cell
+ */
 function findNearMines(cell) {
-    let i = cell.location.i;
-    let j = cell.location.j;
-    let mineCount = 0;
-    let neighbors = getNieghboors(i, j);
-
+    let i = cell.location.i
+    let j = cell.location.j
+    let mineCount = 0
+    let neighbors = getNieghboors(i, j)
     for (let loc of neighbors) {
         if (isOnBoardLocation(loc)) {
             if (gBoard[loc.i][loc.j].isMine) {
-                mineCount++;
+                mineCount++
             }
         }
     }
-    cell.minesAroundCount = mineCount;
+    cell.minesAroundCount = mineCount
 }
 
 /**
- * CELL REVEALING LOGIC
+ * Main click handler: Handles revealing logic, mine hits, and first-click setup
  */
 function revealCell(elcell) {
-    let location = extractCellLOcation(elcell);
-    let cell = gBoard[location.i][location.j];
+    let location = extractCellLOcation(elcell)
+    let cell = gBoard[location.i][location.j]
 
-    // Prevent action if game is over, cell is revealed, or cell is flagged
+    // Block interaction if game is over, cell is revealed, or cell is flagged
     if (!gGame.isOn || cell.isRevealed || cell.isMarked) return;
 
-    // First click logic: start timer and place mines
+    // Trigger mine placement on the very first click
     if (gGame.isFirstClick) {
-        gGame.isFirstClick = false;
-        startTimer();
-        placeMines(gLevel.MINES, cell.location);
-        setMinesNegsCount(gBoard);
+        gGame.isFirstClick = false
+        startTimer()
+        placeMines(gLevel.MINES, cell.location)
+        setMinesNegsCount(gBoard)
     }
 
-    // Handle Mine hit
+    // Handle Mine Hit
     if (cell.isMine) {
-        gBOOM.play();
+        gBOOM.play()
         if (gLives > 0) {
-            // "Death Shield" - lose a life but keep playing
-            gGame.isOn = false; // Briefly pause
-            gLives--;
-            renderLives(gLives);
-            flashCell(elcell, MINE, EMPTY, gGame);
-            return;
+            // "Life System": Pause game, deduct life, and show mine briefly
+            gGame.isOn = false
+            gLives--
+            renderLives(gLives)
+            flashCell(elcell, MINE, EMPTY, gGame)
+            return
         } else {
-            // Actual game over
-            endgame(false);
-            showAllMines();
-            return;
+            // Out of lives: Game Over
+            endgame(false)
+            showAllMines()
+            return
         }
-    }
-
-    // Handle Number or Empty Cell
-    cell.isRevealed = true;
-    gGame.revealedCount++;
-
-    if (cell.minesAroundCount !== 0) {
-        elcell.innerText = cell.minesAroundCount;
+    } else if (cell.minesAroundCount != 0) {
+        // Cell has mine neighbors: Reveal normally
+        cell.isRevealed = true
+        gGame.revealedCount++
+        elcell.innerText = cell.minesAroundCount
     } else {
-        // If empty, recursively reveal neighbors
-        recRevealCells(cell);
+        // Empty cell: Trigger recursive expansion
+        cell.isRevealed = true
+        gGame.revealedCount++
+        recRevealCells(cell)
     }
 
-    // Apply styles
-    elcell.classList.add(`num-${cell.minesAroundCount}`);
-    elcell.classList.add(`revealed`);
-    checkVictory();
+    // Update UI and check for victory
+    elcell.classList.add(`num-${cell.minesAroundCount}`)
+    elcell.classList.add(`revealed`)
+    checkVictory()
 }
 
 /**
- * RECURSIVE REVEAL (FLOOD FILL)
- * Used when clicking an empty cell (0 mines nearby)
+ * Recursively reveals neighbors of an empty cell (Flood Fill)
  */
 function recRevealCells(originalCell) {
-    let neighbors = getNieghboors(originalCell.location.i, originalCell.location.j);
+    let neighbors = getNieghboors(originalCell.location.i, originalCell.location.j)
     for (let loc of neighbors) {
         if (isOnBoardLocation(loc)) {
-            let cell = gBoard[loc.i][loc.j];
-            let elcell = getCell(loc);
+            let cell = gBoard[loc.i][loc.j]
+            let elcell = getCell(loc)
 
-            // Skip if mine, flagged, or already revealed
+            // Stop recursion if mine, flagged, or already revealed
             if (cell.isMine || cell.isMarked || cell.isRevealed) continue;
 
-            cell.isRevealed = true;
-            gGame.revealedCount++;
-            elcell.classList.add(`revealed`);
-            elcell.classList.add(`num-${cell.minesAroundCount}`);
+            cell.isRevealed = true
+            gGame.revealedCount++
+            elcell.classList.add(`num-${cell.minesAroundCount}`)
+            elcell.classList.add(`revealed`)
 
             if (cell.minesAroundCount === 0) {
-                recRevealCells(cell); // Keep going
+                recRevealCells(cell) // Recursive step
             } else {
-                elcell.innerText = cell.minesAroundCount;
+                elcell.innerText = cell.minesAroundCount
             }
         }
     }
 }
 
 /**
- * FLAG LOGIC
+ * Handles right-click for flagging/unflagging cells
  */
 function flagCell(event, elcell) {
-    if (event) event.preventDefault(); // Prevent right-click menu
+    if (event) event.preventDefault() // Block browser context menu
+
     if (!gGame.isOn) return;
 
-    let location = extractCellLOcation(elcell);
-    let cell = gBoard[location.i][location.j];
+    let location = extractCellLOcation(elcell)
+    let cell = gBoard[location.i][location.j]
 
     if (cell.isRevealed) return;
 
     if (cell.isMarked) {
-        cell.isMarked = false;
-        renderCell(cell.location, EMPTY);
-        gRemianingFlags++;
-    } else if (gRemianingFlags > 0) {
-        gRemianingFlags--;
-        cell.isMarked = true;
-        renderCell(cell.location, FLAG);
+        // Unmark
+        cell.isMarked = false
+        renderCell(cell.location, ``)
+        gRemianingFlags++
+    } else {
+        // Mark if flags are available
+        if (gRemianingFlags > 0) {
+            gRemianingFlags--
+            cell.isMarked = true
+            renderCell(cell.location, FLAG)
+        }
     }
-
-    renderFlag(gRemianingFlags);
+    renderFlag(gRemianingFlags)
 }
 
 /**
- * GAME FLOW & ENDING
+ * Ends the game, stops timer, and updates status face
  */
 function endgame(isWin) {
-    gGame.isOn = false;
-    clearInterval(gTimeinterval);
-    renderStatus(isWin ? WIN : LOST);
-}
-
-function checkVictory() {
-    if (gGame.revealedCount === gPassScore) {
-        endgame(true);
-    }
-}
-
-function calcPass() {
-    gPassScore = gLevel.SIZE * gLevel.SIZE - gLevel.MINES;
-}
-
-function restart() {
-    clearInterval(gTimeinterval);
-    onInit();
+    gGame.isOn = false
+    clearInterval(gTimeinterval)
+    renderStatus(isWin ? WIN : LOST)
 }
 
 /**
- * TIMER LOGIC
+ * Increments and updates timer UI
  */
-function startTimer() {
-    gTimeinterval = setInterval(runTimer, gIntervalLength);
-}
-
 function runTimer() {
     if (!gGame.isOn) return;
-    gGame.secsPassed++;
-    updateTimer(gGame.secsPassed);
+    gGame.secsPassed++
+    updateTimer(gGame.secsPassed)
 }
 
 /**
- * FEATURES & UTILITIES
+ * Checks if the number of revealed cells equals the win target
  */
-function showAllMines() {
-    for (let mine of gMines) {
-        renderCell(mine.location, MINE);
-        let elCell = getCell(mine.location);
-        elCell.classList.add('revealed');
+function checkVictory() {
+    if (gGame.revealedCount === gPassScore) {
+        endgame(true)
     }
 }
 
+/**
+ * Calculates how many safe cells must be clicked to win
+ */
+function calcPass() {
+    gPassScore = gLevel.SIZE * gLevel.SIZE - gLevel.MINES
+}
+
+/**
+ * Restarts the game from scratch
+ */
+function restart() {
+    clearInterval(gTimeinterval)
+    onInit()
+}
+
+/**
+ * Starts the timer interval
+ */
+function startTimer() {
+    gTimeinterval = setInterval(runTimer, gIntervalLength)
+}
+
+/**
+ * Reveals every mine on the board (used on Game Over)
+ */
+function showAllMines() {
+    for (let i = 0; i < gMines.length; i++) {
+        renderCell(gMines[i].location, MINE)
+        let elCell = getCell(gMines[i].location)
+        elCell.classList.add(`revealed`)
+    }
+}
+
+/**
+ * Safe Click Hint: Randomly highlights a non-mine, unrevealed cell
+ */
 function onSafeClick() {
     if (gSafeClicks <= 0 || !gGame.isOn) return;
 
-    gSafeClicks--;
-    let arr = gBoard.flat();
-    shuffle(arr);
+    gSafeClicks--
+    let arr = gBoard.flat()
+    shuffle(arr)
 
-    // Find a random safe cell that isn't revealed or mine
     for (let cell of arr) {
         if (!cell.isMine && !cell.isRevealed) {
-            let elCell = getCell(cell.location);
-            elCell.classList.add('flash');
-            setTimeout(() => { elCell.classList.remove('flash'); }, 1500);
-            renderSafeClicks(gSafeClicks);
-            return;
+            let elCell = getCell(cell.location)
+            elCell.classList.add(`flash`) // Highlight
+            setTimeout(() => {
+                elCell.classList.remove(`flash`) // Remove highlight
+            }, 1500)
+            renderSafeClicks(gSafeClicks)
+            return
         }
     }
 }
 
+/**
+ * Updates difficulty settings and restarts
+ */
 function changeDiff(size, mineCount) {
-    gLevel.SIZE = size;
-    gLevel.MINES = mineCount;
-    restart();
+    gLevel.SIZE = size
+    gLevel.MINES = mineCount
+    restart()
 }
 
 /**
- * MATH & NAVIGATION UTILS
+ * Prompt-based custom board setup
  */
-function getNieghboors(i, j) {
-    return [
-        { i: i - 1, j: j - 1 }, { i: i - 1, j: j }, { i: i - 1, j: j + 1 },
-        { i: i, j: j - 1 }, { i: i, j: j + 1 },
-        { i: i + 1, j: j - 1 }, { i: i + 1, j: j }, { i: i + 1, j: j + 1 }
-    ];
-}
-
-function isOnBoardLocation(location) {
-    return location.i >= 0 && location.i < gBoard.length &&
-        location.j >= 0 && location.j < gBoard[0].length;
-}
-
-function shuffle(items) {
-    for (var i = items.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        const temp = items[i];
-        items[i] = items[j];
-        items[j] = temp;
-    }
-    return items;
-}
-
-function extractCellLOcation(elcell) {
-    let str = elcell.classList[1]; // assumes cell-i-j is the second class
-    let arr = str.split('-');
-    return { i: +arr[1], j: +arr[2] };
+function customDiff() {
+    let size = +prompt(`Enter size (e.g., 10 for 10x10)`)
+    let mines = +prompt(`Enter number of mines`)
+    if (size && mines) changeDiff(size, mines)
 }
