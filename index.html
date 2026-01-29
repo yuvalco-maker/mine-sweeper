@@ -6,10 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minesweeper</title>
     <link rel="stylesheet" href="css/app.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body class="background" onload="onInit()">
-
+    <button class="theme" onclick="toggletheme()">Toggle theme</button>
+    <div class="score_box">level: <span class="curr_diff">easy</span>
+        <div class="score_display"><span>best time: <span class="high_score">high
+                    score</span></div>
+    </div>
     <div class="board-container">
 
         <div class="header-container"></div>

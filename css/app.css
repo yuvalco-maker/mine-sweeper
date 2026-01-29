@@ -1,19 +1,20 @@
 /* --- THEME & VARIABLES --- */
 :root {
     /* Main App Environment */
-    --bg-app: #008080;
-    --bg-panel: #bdbdbd;
-    --bg-cell-revealed: #d1d1d1;
+    --bg-app: light-dark(#008080, #121212);
+    --bg-panel: light-dark(#bdbdbd, #2c2c2c);
+    --bg-cell-revealed: light-dark(#d1d1d1, #3a3a3a);
     --bg-flash: #ffff00;
 
     /* Bevels & Edges */
-    --edge-light: #ffffff;
-    --edge-dark: #7b7b7b;
+    --edge-light: light-dark(#ffffff, #3a3a3a);
+    --edge-dark: light-dark(#7b7b7b, #1a1a1a);
 
     /* LED Displays (Timer, Flags, Lives) */
     --led-bg: #000000;
     --led-red: #ff0000;
     --led-green: #22ff00;
+    --led-display: light-dark(rgba(47, 0, 255, 0.8), rgba(92, 73, 175, 0.8));
 
     /* Classic Minesweeper Number Colors */
     --num-1: #0000ff;
@@ -26,9 +27,13 @@
     --num-8: #808080;
 
     /* Text & Miscellaneous */
-    --txt-footer: rgba(255, 255, 255, 0.8);
-    --txt-main: #000000;
+    --txt-footer: light-dark(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.6));
+    --txt-main: light-dark(#000000, #ffffff);
+    --btn-hover: light-dark(#d4d4d4, #444444);
+    --cell-hover: light-dark(#717070, #4a4a4a);
 }
+
+
 
 /* --- GLOBAL STYLES --- */
 * {
@@ -156,6 +161,14 @@ body.background {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
     text-transform: capitalize;
+
+}
+
+.status:hover,
+.light_mode:hover,
+.safeClicks:hover,
+.diff:hover {
+    background-color: var(--btn-hover);
 }
 
 /* Pressed State */
@@ -192,6 +205,10 @@ body.background {
 .cell.revealed {
     border: 0.0625rem solid var(--edge-dark);
     background-color: var(--bg-cell-revealed);
+}
+
+.cell:hover {
+    background-color: var(--cell-hover);
 }
 
 .flash {
@@ -237,4 +254,52 @@ body.background {
     color: var(--txt-footer);
     font-size: 0.75rem;
     opacity: 0.8;
+}
+
+.theme {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--bg-panel);
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    color: var(--txt-main);
+    border-top: 0.125rem solid var(--edge-light);
+    border-left: 0.125rem solid var(--edge-light);
+    border-bottom: 0.125rem solid var(--edge-dark);
+    border-right: 0.125rem solid var(--edge-dark);
+}
+
+.score_box {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    color: var(--led-red);
+    background-color: var(--led-display);
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    padding: 0.125rem 0.375rem;
+    border: 0.0625rem solid var(--edge-dark);
+}
+
+.score_display {
+    color: var(--led-green);
+}
+
+.standart_button {
+    background-color: var(--bg-panel);
+    border-top: 0.125rem solid var(--edge-light);
+    border-left: 0.125rem solid var(--edge-light);
+    border-bottom: 0.125rem solid var(--edge-dark);
+    border-right: 0.125rem solid var(--edge-dark);
+    cursor: pointer;
+    font-weight: bold;
+    outline: none;
+    color: var(--txt-main);
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    text-transform: capitalize;
+    min-width: 6rem;
 }

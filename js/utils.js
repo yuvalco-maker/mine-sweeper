@@ -135,6 +135,7 @@ function renderheader(selector) {
         <div class="lower-control">
             <button type="button" class="safeClicks" onClick="onSafeClick()">Safe-Clicks: 3</button>
             <div class="lives-counter">LIVES: 3</div>
+            <button type="button" class="standart_button" onClick="hint()">𖡊𖡊𖡊</button>
         </div>
     </div>
 `;
@@ -188,22 +189,24 @@ function renderSafeClicks(num) {
 /**
  * Briefly reveals a cell (used when hitting a mine with lives remaining)
  */
-function flashCell(elCell, innerText, revertText, game) {
+function flashCell(elCell, innerText, revertText, game,bool=false) {
     showCell(elCell)
     let loc = extractCellLOcation(elCell)
     renderCell(loc, innerText)
-    setTimeout(() => { unrevealCell(elCell, revertText, game) }, 1000)
+    setTimeout(() => { unrevealCell(elCell, revertText, game,bool) }, 1000)
 }
 
 /**
  * Reverts a "flashed" cell back to its hidden/flagged state
  */
-function unrevealCell(elCell, revertText, game) {
+function unrevealCell(elCell, revertText, game,bool) {
     elCell.classList.remove(`revealed`)
     let loc = extractCellLOcation(elCell)
     renderCell(loc, revertText)
     game.isOn = true // Resume game
+    if(!bool){
     flagCell(null, elCell) // Automatically re-flag it for safety
+    }
 }
 
 /**
@@ -219,9 +222,59 @@ function showCell(elCell) {
 function renderdiff(selector) {
     const elContainer = document.querySelector(selector)
     elContainer.innerHTML = `
-   <button type="button" class="diff easy" onClick="changeDiff(4,2)">beginner</button>
-   <button type="button" class="diff normal" onClick="changeDiff(8,12)">medium</button>
-   <button type="button" class="diff hard" onClick="changeDiff(14,32)">expert</button>
+   <button type="button" class="diff easy" onClick="changeDiff(4,2,'Beginer')">beginner</button>
+   <button type="button" class="diff normal" onClick="changeDiff(8,12,'Medium')">medium</button>
+   <button type="button" class="diff hard" onClick="changeDiff(14,32,'Expert')">expert</button>
    <button type="button" class="diff custom" onClick="customDiff()">custom</button>
 `;
+}
+
+function toggletheme() {
+    const html = document.documentElement;
+    const currentTheme = html.style.colorScheme;
+    if (currentTheme === `dark`) {
+        html.style.colorScheme = `light`;
+    } else {
+        html.style.colorScheme = `dark`;
+    }
+}
+
+function renderCurrDiffText(diff) {
+    let elDiff = document.querySelector(`.curr_diff`)
+    elDiff.innerText = diff
+
+}
+
+function getHighScore(difficulty) {
+    let highScore = +localStorage.getItem(difficulty)
+    // if theres no highscore for this level we set it to zero for consistency 
+    if (highScore === null) {
+        highScore = 0
+        localStorage.setItem(difficulty, JSON.stringify(highScore))
+    }
+    return highScore
+}
+
+function updateHighScore(difficulty, score) {
+    if (score > getHighScore(difficulty)) {
+        localStorage.setItem(difficulty, JSON.stringify(score))
+    }
+}
+
+function renderHighScore(score) {
+    let elScore = document.querySelector(`.high_score`)
+    elScore.innerText = score
+}
+
+function renderHints(img,bool){
+    let elHints = document.querySelector(`.standart_button`)
+    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+    const segments = Array.from(segmenter.segment(elHints.innerHTML)).map(s => s.segment);
+    if(bool===true){    
+        elHints.innerHTML= segments[1]+segments[2]+img
+        
+    }
+    else{
+        elHints.innerHTML= img+ segments[0]+segments[1]
+    }
 }
